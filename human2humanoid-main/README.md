@@ -201,7 +201,7 @@ Please read through the whole README.md before cloning the repo.
    # transformer
  
    # play transformer
-   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=138 env.num_privileged_obs=None motion.teleop_obs_version=v-teleop-extend-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_03_26_10-55-44_H2O_Policy checkpoint=24000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/stable_punch.pkl train.runner.policy_class_name=ActorCriticTransformer train=ppo_transformer
+   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=138 env.num_privileged_obs=None motion.teleop_obs_version=v-teleop-extend-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_03_26_10-55-44_H2O_Policy checkpoint=24000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/raise_right_hand.pkl train.runner.policy_class_name=ActorCriticTransformer train=ppo_transformer
 
 
    # 训练transformer
