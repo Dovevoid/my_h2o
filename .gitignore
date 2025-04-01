@@ -1,0 +1,9 @@
+# 忽略特定文件夹
+smplx-master/
+SMPLSim-master/
+IsaacGym_Preview_4_Package/
+
+# 忽略 human2humanoid-main 下的特定路径
+human2humanoid-main/legged_gym/resources/motions/h1/*
+human2humanoid-main/legged_gym/logs/
+human2humanoid-main/legged_gym/output/
