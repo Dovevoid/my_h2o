@@ -72,7 +72,7 @@ class BaseTask():
             self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_T, "NEXT")
 
     def get_observations(self):
-        if self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer":
+        if (self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer")or(self.cfg.train.runner["policy_class_name"] == "ActorCriticTCN"):
             # import ipdb; ipdb.set_trace()
             return self.obs_history_buf
         else:

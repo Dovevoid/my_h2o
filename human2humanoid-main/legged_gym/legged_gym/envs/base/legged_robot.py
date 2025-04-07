@@ -291,7 +291,7 @@ class LeggedRobot(BaseTask):
 
 
                 # 增加历史输入
-        if self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer":
+        if (self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer")or(self.cfg.train.runner["policy_class_name"] == "ActorCriticTCN"):
             # import ipdb; ipdb.set_trace()
             return self.obs_history_buf, self.privileged_obs_buf, self.rew_buf, self.reset_buf, self.extras
         else:
@@ -480,7 +480,7 @@ class LeggedRobot(BaseTask):
             # print("Terminated", self.episode_length_buf[env_ids].numpy())
         
         # reset buffers
-        if self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer":
+        if (self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer")or(self.cfg.train.runner["policy_class_name"] == "ActorCriticTCN"):
             self.obs_history_buf[env_ids, :, :] = 0.
         self.last_actions[env_ids] = 0.
         self.actions[env_ids] = 0.
@@ -1800,7 +1800,7 @@ class LeggedRobot(BaseTask):
             privileged_obs_buf = torch.cat([obs_buf_denoise, self.privileged_info], dim=1)
 
         # 增加历史输入
-        if self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer":
+        if (self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer") or (self.cfg.train.runner["policy_class_name"] == "ActorCriticTCN"):
             if torch.all(self.obs_history_buf == 0):
                 self.obs_history_buf = self.obs_buf[:, None, :].expand_as(self.obs_history_buf)
             else:
@@ -2882,7 +2882,7 @@ class LeggedRobot(BaseTask):
 
 
         # 增加历史输入
-        if self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer":
+        if (self.cfg.train.runner["policy_class_name"] == "ActorCriticTransformer") or(self.cfg.train.runner["policy_class_name"] == "ActorCriticTCN"):
             self.obs_context_len = self.cfg.train.policy.obs_context_len
             # print(self.obs_context_len)
             # import ipdb; ipdb.set_trace()

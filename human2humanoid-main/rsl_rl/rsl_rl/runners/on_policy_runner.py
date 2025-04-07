@@ -44,7 +44,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 
 from rsl_rl.algorithms import PPO
-from rsl_rl.modules import ActorCritic, ActorCriticRecurrent, ActorCriticPULSE, ActorCriticTransformer
+from rsl_rl.modules import ActorCritic, ActorCriticRecurrent, ActorCriticPULSE, ActorCriticTransformer, ActorCriticTCN
 from rsl_rl.env import VecEnv
 from tqdm import tqdm
 
@@ -95,7 +95,7 @@ class OnPolicyRunner:
             self.kin_dict_info = {k: (v.shape, v.reshape(v.shape[0], -1).shape) for k, v in env.kin_dict.items()}
             self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, [self.env.num_obs], [self.env.num_privileged_obs], [self.env.num_actions], self.kin_dict_info)
         else:
-            if self.cfg["policy_class_name"] == "ActorCriticTransformer":
+            if (self.cfg["policy_class_name"] == "ActorCriticTransformer") or self.cfg["policy_class_name"] == "ActorCriticTCN":
                 # print(self.policy_cfg.obs_context_len)
                 # import ipdb; ipdb.set_trace()
                 self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, [self.policy_cfg.obs_context_len, self.env.num_obs], [self.env.num_privileged_obs], [self.env.num_actions], None)

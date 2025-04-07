@@ -35,3 +35,4 @@ from .actor_critic_pulse import ActorCriticPULSE
 from .velocity_estimator import VelocityEstimator, VelocityEstimatorGRU
 
 from .actor_critic_transformer import ActorCriticTransformer
+from .actor_critic_tcn import ActorCriticTCN
