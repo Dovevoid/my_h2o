@@ -14,7 +14,7 @@ import os
 import sys
 import pdb
 import os.path as osp
-
+import cv2
 sys.path.append(os.getcwd())
 
 import joblib
@@ -24,6 +24,7 @@ import torch
 from phc.utils.motion_lib_h1 import MotionLibH1
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 from phc.utils.flags import flags
+from datetime import datetime
 
 
 flags.test = True
@@ -52,7 +53,8 @@ asset_descriptors = [
 ]
 sk_tree = SkeletonTree.from_mjcf(h1_xml)
 
-motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/test.pkl"
+motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/rgb_box_copyangle.pkl"
+# motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/combined_actions_dict.pkl"
 # motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/stable_punch.pkl"
 # motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/amass_phc_filtered.pkl"
 if os.path.exists(motion_file):
@@ -87,7 +89,7 @@ gym = gymapi.acquire_gym()
 
 # configure sim
 sim_params = gymapi.SimParams()
-sim_params.dt = dt = 1.0 / 60.0
+sim_params.dt = dt = 1.0 / 30.0
 sim_params.up_axis = gymapi.UP_AXIS_Z
 sim_params.gravity = gymapi.Vec3(0.0, 0.0, -9.81)
 if args.physics_engine == gymapi.SIM_FLEX:
@@ -218,10 +220,48 @@ init_positions = gymapi.Vec3(0.0, 0.0, 0.0)
 spacing = 0.
 
 
+'''
+视频录制
+'''
+# 添加相机传感器设置
+camera_properties = gymapi.CameraProperties()
+camera_properties.width = 480
+camera_properties.height = 640
+h1 = gym.create_camera_sensor(envs[0], camera_properties)
+camera_offset = gymapi.Vec3(0, -1.2, 0.3)
+camera_rotation = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), np.deg2rad(90))
+actor_handle = gym.get_actor_handle(envs[0], 0)
+body_handle = gym.get_actor_rigid_body_handle(envs[0], actor_handle, 0)
+gym.attach_camera_to_body(
+    h1, envs[0], body_handle,
+    gymapi.Transform(camera_offset, camera_rotation),
+    gymapi.FOLLOW_POSITION)
 
+# 设置视频录制
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+video_dir = "videos"
+experiment_time = datetime.now().strftime('%b%d_%H-%M-%S')
+img_dir = os.path.join(video_dir,experiment_time)
+dir = os.path.join(video_dir, experiment_time,experiment_time + '.mp4')
+if not os.path.exists(video_dir):
+    os.mkdir(video_dir)
+if not os.path.exists(img_dir):
+    os.mkdir(img_dir)
+video = cv2.VideoWriter(dir, fourcc, 30.0, (480, 640))
+
+
+
+
+max_frames = 282  # 最多录制 500 帧
+frame_count = 0
 
 
 while not gym.query_viewer_has_closed(viewer):
+
+    frame_count += 1
+    if frame_count > max_frames:
+        print("Reached maximum frame count, exiting...")
+        break
     # step the physics
 
     motion_len = motion_lib.get_motion_length(motion_id).item()
@@ -241,10 +281,10 @@ while not gym.query_viewer_has_closed(viewer):
     gym.refresh_rigid_body_state_tensor(sim)
     # import pdb; pdb.set_trace()
     idx = 0
-    for pos_joint in rb_pos[0, 1:]: # idx 0 torso (duplicate with 11)
-        sphere_geom2 = gymutil.WireframeSphereGeometry(0.1, 4, 4, None, color=(1, 0.0, 0.0))
-        sphere_pose = gymapi.Transform(gymapi.Vec3(pos_joint[0], pos_joint[1], pos_joint[2]), r=None)
-        gymutil.draw_lines(sphere_geom2, gym, viewer, envs[0], sphere_pose) 
+    # for pos_joint in rb_pos[0, 1:]: # idx 0 torso (duplicate with 11)
+    #     sphere_geom2 = gymutil.WireframeSphereGeometry(0.1, 4, 4, None, color=(1, 0.0, 0.0))
+    #     sphere_pose = gymapi.Transform(gymapi.Vec3(pos_joint[0], pos_joint[1], pos_joint[2]), r=None)
+    #     gymutil.draw_lines(sphere_geom2, gym, viewer, envs[0], sphere_pose) 
     # import pdb; pdb.set_trace()
         
     # out = motion_lib.mesh_parsers.forward_kinematics_batch(pose_aa, root_rot, root_pos)
@@ -322,6 +362,17 @@ while not gym.query_viewer_has_closed(viewer):
     gym.step_graphics(sim)
     gym.draw_viewer(viewer, sim, True)
 
+
+    # 更新相机图像并写入视频
+    gym.render_all_camera_sensors(sim)
+    camera_image = gym.get_camera_image(sim, envs[0], h1, gymapi.IMAGE_COLOR)
+    height, width = camera_properties.height, camera_properties.width
+    camera_image = camera_image.reshape((height, width, 4)) 
+    camera_image = cv2.cvtColor(camera_image, cv2.COLOR_RGBA2BGR)
+    frame_path = os.path.join(img_dir, f"frame_{frame_count}.png")
+    cv2.imwrite(frame_path, camera_image)
+    video.write(camera_image)
+
     # Wait for dt to elapse in real time.
     # This synchronizes the physics simulation with the rendering rate.
     gym.sync_frame_time(sim)
@@ -351,3 +402,4 @@ print("Done")
 
 gym.destroy_viewer(viewer)
 gym.destroy_sim(sim)
+video.release()
