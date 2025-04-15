@@ -227,7 +227,7 @@ Please read through the whole README.md before cloning the repo.
 
 
    # checkpoint 
-   resume=True load_run=25_03_26_10-55-44_H2O_Policy checkpoint=51000
+   resume=True load_run= checkpoint=
 
    # tensorboard命令
    tensorboard  --logdir="/home/peter/h2o/human2humanoid-main/legged_gym/logs/h1:teleop/25_04_13_15-06-30_H2O_Policy"
