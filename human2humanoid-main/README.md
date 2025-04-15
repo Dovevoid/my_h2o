@@ -188,14 +188,14 @@ Please read through the whole README.md before cloning the repo.
     python legged_gym/scripts/train_hydra.py --config-name=config_teleop task=h1:teleop run_name=H2O_Policy env.num_observations=138 env.num_privileged_obs=215 motion.teleop_obs_version=v-teleop-extend-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=4096 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=1.5 sim_device=cuda:0 motion.motion_file=resources/motions/h1/amass_phc_filtered.pkl rewards=rewards_teleop_omnih2o_teacher rewards.penalty_curriculum=True rewards.penalty_scale=0.5 env.add_short_history=False
     ```
    # play h2o
-   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=138 env.num_privileged_obs=215 motion.teleop_obs_version=v-teleop-extend-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_03_14_08-52-24_H2O_Policy checkpoint=60000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/test.pkl
+   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=138 env.num_privileged_obs=215 motion.teleop_obs_version=v-teleop-extend-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_03_14_08-52-24_H2O_Policy checkpoint=60000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/rgb_box_stable.pkl
 
 
    #  without lin_vel，use history, mlp
     python legged_gym/scripts/train_hydra.py --config-name=config_teleop task=h1:teleop run_name=H2O_Policy env.num_observations=1080 env.num_privileged_obs=1157 motion.teleop_obs_version=v-teleop-extend-max-nolinvel-history motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=4096 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=1.5 sim_device=cuda:0 motion.motion_file=resources/motions/h1/amass_phc_filtered.pkl rewards=rewards_teleop_omnih2o_teacher rewards.penalty_curriculum=True rewards.penalty_scale=0.5 env.add_short_history=False train.policy.actor_hidden_dims=[1024,512,256] train.policy.critic_hidden_dims=[1024,512,256]
 
     # play history
-   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=1080 env.num_privileged_obs=1157 motion.teleop_obs_version=v-teleop-extend-max-nolinvel-history motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_03_28_13-12-11_H2O_Policy checkpoint=60000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/test.pkl train.policy.actor_hidden_dims=[1024,512,256] train.policy.critic_hidden_dims=[1024,512,256]
+   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=1080 env.num_privileged_obs=1157 motion.teleop_obs_version=v-teleop-extend-max-nolinvel-history motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_04_10_15-07-04_H2O_Policy checkpoint=82500 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/rgb_box_stable.pkl train.policy.actor_hidden_dims=[512,512,256,128] train.policy.critic_hidden_dims=[512,512,256,128]
     
    
    # transformer
@@ -213,11 +213,24 @@ Please read through the whole README.md before cloning the repo.
    # Play TCN
    python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=138 env.num_privileged_obs=None motion.teleop_obs_version=v-teleop-extend-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_04_07_09-46-08_H2O_Policy checkpoint=4000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/stable_punch.pkl train.runner.policy_class_name=ActorCriticTCN train=ppo_tcn 
 
+   # 尝试不用关键点位置而用关节角度和根位置
+   python legged_gym/scripts/train_hydra.py --config-name=config_teleop task=h1:teleop run_name=H2O_Policy env.num_observations=116 env.num_privileged_obs=193 motion.teleop_obs_version=v-min motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=4096 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=1.5 sim_device=cuda:0 motion.motion_file=resources/motions/h1/amass_phc_filtered.pkl rewards=rewards_teleop_omnih2o_teacher rewards.penalty_curriculum=True rewards.penalty_scale=0.5 env.add_short_history=False
+
+   # 关节角度play
+   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=116 env.num_privileged_obs=193 motion.teleop_obs_version=v-min motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_04_11_15-54-52_H2O_Policy checkpoint=65000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/rgb_box_stable.pkl
+
+   # 尝试不用关键点位置而用关节角度和根位置(增加历史输入)
+   python legged_gym/scripts/train_hydra.py --config-name=config_teleop task=h1:teleop run_name=H2O_Policy env.num_observations=904 env.num_privileged_obs=981 motion.teleop_obs_version=v-teleop-dof-nolinvel-history motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=4096 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=1.5 sim_device=cuda:0 motion.motion_file=resources/motions/h1/amass_phc_filtered.pkl rewards=rewards_teleop_omnih2o_teacher rewards.penalty_curriculum=True rewards.penalty_scale=0.5 env.add_short_history=False 
+
+   # 尝试不用关键点位置而用关节角度和根位置(增加历史输入)
+   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=904 env.num_privileged_obs=981 motion.teleop_obs_version=v-teleop-dof-nolinvel-history motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_04_13_15-06-30_H2O_Policy checkpoint=60000 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/rgb_box_stable.pkl
+
+
    # checkpoint 
    resume=True load_run=25_03_26_10-55-44_H2O_Policy checkpoint=51000
 
    # tensorboard命令
-   tensorboard  --logdir="/home/peter/h2o/human2humanoid-main/legged_gym/logs/h1:teleop/25_03_29_13-11-20_H2O_Policy"
+   tensorboard  --logdir="/home/peter/h2o/human2humanoid-main/legged_gym/logs/h1:teleop/25_04_13_15-06-30_H2O_Policy"
 
 # Motion Retargeting
 
