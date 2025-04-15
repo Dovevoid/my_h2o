@@ -1,6 +1,7 @@
 import sys
 from legged_gym import LEGGED_GYM_ROOT_DIR
 import os
+from datetime import datetime
 
 import isaacgym
 from isaacgym import gymapi
@@ -14,8 +15,11 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from easydict import EasyDict
 from legged_gym.utils.helpers import class_to_dict
+import cv2
 
 NOROSPY = False
+RENDER = False
+
 try:
     import rospy
 except:
@@ -30,7 +34,7 @@ command_state = {
 
 override = False
 
-EXPORT_ONNX = True
+EXPORT_ONNX = False
 
 
 def dict_compare(d1, d2):
@@ -51,10 +55,7 @@ def dict_compare(d1, d2):
 def play(cfg_hydra: DictConfig) -> None:
     cfg_hydra = EasyDict(OmegaConf.to_container(cfg_hydra, resolve=True))
     cfg_hydra.physics_engine = gymapi.SIM_PHYSX
-    
-    # env_cfg, train_cfg = task_registry.get_cfgs(name=cfg_hydra.task)
-    # import ipdb; ipdb.set_trace()
-    
+     
     env_cfg, train_cfg = cfg_hydra, cfg_hydra.train
     
 
@@ -83,7 +84,7 @@ def play(cfg_hydra: DictConfig) -> None:
     # env_cfg.terrain.num_rows = 5
     # env_cfg.terrain.num_cols = 5
     env_cfg.terrain.curriculum = False
-    env_cfg.terrain.mesh_type = 'trimesh'
+    env_cfg.terrain.mesh_type = 'plane'
     # env_cfg.terrain.mesh_type = 'plane'
     # if env_cfg.terrain.mesh_type == 'trimesh':
     #     env_cfg.terrain.terrain_types = ['flat', 'rough', 'low_obst']  # do not duplicate!
@@ -128,8 +129,10 @@ def play(cfg_hydra: DictConfig) -> None:
 
     logger = Logger(env.dt)
     robot_index = 0 # which robot is used for logging
-    joint_index = 4 # which joint is used for logging
-    stop_state_log = 200 # number of steps before plotting states
+
+    # 15是右肩pitch 18右手肘（较好） 14左手肘 11左肩picth(较好)
+    joint_index = 18 # which joint is used for logging (从0开始计算)
+    stop_state_log = 400 # number of steps before plotting states
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
 
 
@@ -180,6 +183,36 @@ def play(cfg_hydra: DictConfig) -> None:
     i = 0
     
 
+    '''
+    视频录制
+    '''
+    if RENDER:
+        camera_properties = gymapi.CameraProperties()
+        camera_properties.width = 480
+        camera_properties.height = 640
+        h1 = env.gym.create_camera_sensor(env.envs[0], camera_properties)
+        camera_offset = gymapi.Vec3(1.5, -1.2, 0.3)
+        camera_rotation = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1),
+                                                    np.deg2rad(135))
+        actor_handle = env.gym.get_actor_handle(env.envs[0], 0)
+        body_handle = env.gym.get_actor_rigid_body_handle(env.envs[0], actor_handle, 0)
+        env.gym.attach_camera_to_body(
+            h1, env.envs[0], body_handle,
+            gymapi.Transform(camera_offset, camera_rotation),
+            gymapi.FOLLOW_POSITION)
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        video_dir = os.path.join(LEGGED_GYM_ROOT_DIR, 'videos')
+        experiment_dir = os.path.join(LEGGED_GYM_ROOT_DIR, 'videos',datetime.now().strftime('%b%d_%H-%M-%S'))
+        dir = os.path.join(experiment_dir, 'h1.mp4')
+        if not os.path.exists(video_dir):
+            os.mkdir(video_dir)
+        if not os.path.exists(experiment_dir):
+            os.mkdir(experiment_dir)
+        # 帧率为50
+        video = cv2.VideoWriter(dir, fourcc, 50.0, (480, 640))
+
+
     while (not NOROSPY and not rospy.is_shutdown()) or (NOROSPY):
         # for i in range(1000*int(env.max_episode_length)):
 
@@ -189,6 +222,31 @@ def play(cfg_hydra: DictConfig) -> None:
         
         # print(torch.sum(torch.square(env.projected_gravity[:, :2]), dim=1))
         obs, _, rews, dones, infos = env.step(actions.detach())
+        # print(obs[0][-66:-66+19])
+        # print(obs[0][-113:-113+19])
+        # print(env.dof_pos[robot_index, :])
+        # quit(0)
+        
+        if env_cfg.motion.teleop_obs_version == 'v-teleop-dof-nolinvel-history':
+            target_joint_index = -66 + joint_index 
+            target_joint = obs[0][target_joint_index].cpu().numpy()
+            # print(target_joint)
+        else:
+            target_joint = actions[robot_index, joint_index].item() * env.cfg.control.action_scale + env.default_dof_pos[robot_index, joint_index].item()
+            
+
+        # 保存图像
+        if RENDER:
+            env.gym.fetch_results(env.sim, True)
+            env.gym.step_graphics(env.sim)
+            env.gym.render_all_camera_sensors(env.sim)
+            img = env.gym.get_camera_image(env.sim, env.envs[0], h1, gymapi.IMAGE_COLOR)
+            height, width = camera_properties.height, camera_properties.width
+            img = np.reshape(img, (height, width, 4))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            frame_path = os.path.join(experiment_dir, f"frame_{i}.png")
+            cv2.imwrite(frame_path, img)
+            video.write(img[..., :3])
 
         if env_cfg.motion.realtime_vr_keypoints:
             avpposeinfo.check()
@@ -216,7 +274,8 @@ def play(cfg_hydra: DictConfig) -> None:
         if i < stop_state_log:
             logger.log_states(
                 {
-                    'dof_pos_target': actions[robot_index, joint_index].item() * env.cfg.control.action_scale + env.default_dof_pos[robot_index, joint_index].item(),
+                    'dof_pos_target': target_joint,
+                    # 'dof_pos_target': actions[robot_index, joint_index].item() * env.cfg.control.action_scale + env.default_dof_pos[robot_index, joint_index].item(),
                     # 'dof_pos_target': env.actions[robot_index, joint_index].item() * env.cfg.control.action_scale + env.default_dof_pos[robot_index, joint_index].item(),
                     'dof_pos': env.dof_pos[robot_index, joint_index].item(),
                     'dof_vel': env.dof_vel[robot_index, joint_index].item(),
@@ -239,6 +298,9 @@ def play(cfg_hydra: DictConfig) -> None:
             pass
             # logger.print_rewards()
         i += 1
+
+    if RENDER:
+        video.release()    
 
 
 if __name__ == '__main__':

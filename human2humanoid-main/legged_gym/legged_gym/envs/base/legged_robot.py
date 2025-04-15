@@ -1747,7 +1747,47 @@ class LeggedRobot(BaseTask):
                 obs = torch.cat([dof_pos, dof_vel, base_acc, base_ang_vel, base_gravity,  # 19dim + 19dim + 3dim + 3dim + 3dim 
                                             task_obs,  # 
                                             self.actions], dim = -1) # 19dim                
+            elif self.cfg.motion.teleop_obs_version == 'v-teleop-dof-nolinvel-history':
+                with torch.no_grad():    
+                    # robot
+                    dof_pos = self.dof_pos
+                    dof_vel = self.dof_vel
+                    base_vel = self.base_lin_vel
+                    base_ang_vel = self.base_ang_vel
+                    base_gravity = self.projected_gravity
+                    delta_root_pos = ref_body_pos[:, 0, :] - self.base_pos
+                    delta_base_pos = quat_rotate_inverse(self.base_quat, delta_root_pos)[:, :2]
                     
+                    forward = quat_apply(self.base_quat, self.forward_vec)
+                    heading = torch.atan2(forward[:, 1], forward[:, 0])
+                    
+                    ref_forward = quat_apply(ref_body_rot[:, 0, :], self.forward_vec)
+                    ref_heading = torch.atan2(ref_forward[:, 1], ref_forward[:, 0])
+                    delta_heading = wrap_to_pi(ref_heading - heading).unsqueeze(1)
+                    # ref
+                    ref_root_rot = ref_body_rot[:, 0, :]
+                    ref_root_vel = ref_body_vel_subset[:, 0, :]
+                    ref_root_ang_vel = ref_body_ang_vel[:, 0, :]
+                    
+                    ref_dof_pos = ref_joint_pos
+                    # print(ref_dof_pos)
+                    ref_dof_vel = ref_joint_vel
+                    ref_base_vel = quat_rotate_inverse(ref_root_rot, ref_root_vel)
+                    ref_base_ang_vel = quat_rotate_inverse(ref_root_rot, ref_root_ang_vel)
+                    ref_base_gravity = quat_rotate_inverse(ref_root_rot, self.gravity_vec)
+                    
+ 
+                    # obs = torch.cat([dof_pos, dof_vel, base_vel, base_ang_vel, base_gravity, delta_base_pos, delta_heading,
+                    #                           ref_dof_pos, ref_dof_vel, ref_base_vel, ref_base_ang_vel,ref_base_gravity,
+                    #                           self.actions], dim = -1)
+                    obs = torch.cat([dof_pos, dof_vel, base_ang_vel, base_gravity, delta_base_pos, delta_heading,
+                            ref_dof_pos, ref_dof_vel, ref_base_vel, ref_base_ang_vel,ref_base_gravity,
+                            self.actions], dim = -1) 
+                    # 增加历史输入  
+                    if torch.all(self.obs_buf == 0):
+                        obs = obs.repeat(1, 8)
+                    else:
+                        obs = torch.cat([self.obs_buf[:,obs.shape[1]:],obs],dim=1)          
                 
 
             else:
@@ -2801,7 +2841,34 @@ class LeggedRobot(BaseTask):
                 # base gravity
                 noise_vec[2*self.num_dof + 6  : 2*self.num_dof + 9] = noise_scales.gravity * noise_level
                 # ref dof pos
-                noise_vec[2*self.num_dof + 9 : 2*self.num_dof + 9 + (len(self.cfg.motion.teleop_selected_keypoints_names) + 2) *3 * 3] = noise_scales.ref_body_pos * noise_level * self.obs_scales.body_pos  
+                noise_vec[2*self.num_dof + 9 : 2*self.num_dof + 9 + (len(self.cfg.motion.teleop_selected_keypoints_names) + 2) *3 * 3] = noise_scales.ref_body_pos * noise_level * self.obs_scales.body_pos 
+            elif self.cfg.motion.teleop_obs_version == 'v-teleop-dof-nolinvel-history':
+                noise_vec[-113 + 0                  : -113 + self.num_dof] = noise_scales.dof_pos * noise_level * self.obs_scales.dof_pos
+                # dof vel
+                noise_vec[-113 + self.num_dof        : -113 + 2*self.num_dof    ] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
+                # base vel
+                # noise_vec[-113 + 2*self.num_dof      : -113 + 2*self.num_dof + 3] = noise_scales.lin_vel * noise_level * self.obs_scales.lin_vel
+                # base ang vel
+                noise_vec[-113 + 2*self.num_dof + 3 -3 : -113 + 2*self.num_dof + 6-3] = noise_scales.ang_vel * noise_level * self.obs_scales.ang_vel
+                # base gravity
+                noise_vec[-113 + 2*self.num_dof + 6 -3 : -113 + 2*self.num_dof + 9-3] = noise_scales.gravity * noise_level
+                # x y heading targets
+                noise_vec[-113 + 2*self.num_dof + 9 -3 : -113 + 2*self.num_dof + 12-3] = 0.
+                
+                # ref dof pos
+                noise_vec[-113 + 2*self.num_dof + 12 -3: -113 + 3*self.num_dof + 12-3] = noise_scales.ref_dof_pos * noise_level * self.obs_scales.dof_pos
+                # ref dof vel
+                noise_vec[-113 + 3*self.num_dof + 12 -3: -113 + 4*self.num_dof + 12-3] = noise_scales.ref_dof_vel * noise_level * self.obs_scales.dof_vel
+                # ref base vel
+                noise_vec[-113 + 4*self.num_dof + 12 -3: -113 + 4*self.num_dof + 15-3] = noise_scales.ref_lin_vel * noise_level * self.obs_scales.lin_vel
+                # ref base ang vel
+                noise_vec[-113 + 4*self.num_dof + 15 -3: -113 + 4*self.num_dof + 18-3] = noise_scales.ref_ang_vel * noise_level * self.obs_scales.ang_vel
+                # ref base gravity
+                noise_vec[-113 + 4*self.num_dof + 18 -3: -113 + 4*self.num_dof + 21-3] = noise_scales.ref_gravity * noise_level
+                
+                # self.actions
+                noise_vec[-113 + 4*self.num_dof + 21 -3: ] = 0.  
+
             else:
                 raise NotImplementedError
         else:

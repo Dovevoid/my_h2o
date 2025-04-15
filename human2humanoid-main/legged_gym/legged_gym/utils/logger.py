@@ -74,18 +74,42 @@ class Logger:
             time = np.linspace(0, len(value)*self.dt, len(value))
             break
         log= self.state_log
+
+        # 新建一个画布，保存结果
+        joint_pos_fig, joint_pos_ax = plt.subplots(figsize=(8, 4))
+
         # plot joint targets and measured positions
         a = axs[1, 0]
-        if log["dof_pos"]: a.plot(time, log["dof_pos"], label='measured')
-        if log["dof_pos_target"]: a.plot(time, log["dof_pos_target"], label='target')
+        if log["dof_pos"]: 
+            a.plot(time, log["dof_pos"], label='measured')
+            joint_pos_ax.plot(time, log["dof_pos"], label='measured')  # 同步绘制到SVG画布
+        if log["dof_pos_target"]: 
+            a.plot(time, log["dof_pos_target"], label='target')
+            joint_pos_ax.plot(time, log["dof_pos_target"], label='target')  # 同步绘制到SVG画布
         a.set(xlabel='time [s]', ylabel='Position [rad]', title='DOF Position')
         a.legend()
+
+        # SVG画布设置
+        joint_pos_ax.set(
+            xlabel='time(s)', 
+            ylabel='position', 
+            title='dof command',
+        )
+        joint_pos_ax.legend()
+        # 保存SVG
+        joint_pos_fig.savefig('joint.svg', 
+                            format='svg', 
+                            bbox_inches='tight',  # 防止标签被裁剪
+                            dpi=300)
+        plt.close(joint_pos_fig)  # 关闭临时画布
+
         # plot joint velocity
         a = axs[1, 1]
         if log["dof_vel"]: a.plot(time, log["dof_vel"], label='measured')
         if log["dof_vel_target"]: a.plot(time, log["dof_vel_target"], label='target')
         a.set(xlabel='time [s]', ylabel='Velocity [rad/s]', title='Joint Velocity')
         a.legend()
+
         # plot base vel x
         a = axs[0, 0]
         if log["base_vel_x"]: a.plot(time, log["base_vel_x"], label='measured')
