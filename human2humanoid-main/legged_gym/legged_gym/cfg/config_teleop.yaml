@@ -10,7 +10,7 @@ defaults:
   - noise: noise_teleop
   - normalization: normalization_teleop
   - train: ppo_teleop
-  - rewards: rewards_teleop_omnih2o_teacher
+  - rewards: rewards_teleop
   - sim: sim_teleop
   - terrain: terrain_teleop
   - viewer: viewer_base

@@ -16,6 +16,7 @@ from omegaconf import DictConfig, OmegaConf
 from easydict import EasyDict
 from legged_gym.utils.helpers import class_to_dict
 import cv2
+from phc.utils import torch_utils
 
 NOROSPY = False
 RENDER = False
@@ -132,7 +133,7 @@ def play(cfg_hydra: DictConfig) -> None:
 
     # 15是右肩pitch 18右手肘（较好） 14左手肘 11左肩picth(较好)
     joint_index = 18 # which joint is used for logging (从0开始计算)
-    stop_state_log = 400 # number of steps before plotting states
+    stop_state_log = 198 # number of steps before plotting states
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
 
 
@@ -191,7 +192,8 @@ def play(cfg_hydra: DictConfig) -> None:
         camera_properties.width = 480
         camera_properties.height = 640
         h1 = env.gym.create_camera_sensor(env.envs[0], camera_properties)
-        camera_offset = gymapi.Vec3(1.5, -1.2, 0.3)
+        # camera_offset = gymapi.Vec3(1.0, -0.8, 0.3)
+        camera_offset = gymapi.Vec3(1.2, -1.0, 0.3)
         camera_rotation = gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1),
                                                     np.deg2rad(135))
         actor_handle = env.gym.get_actor_handle(env.envs[0], 0)
@@ -212,23 +214,62 @@ def play(cfg_hydra: DictConfig) -> None:
         # 帧率为50
         video = cv2.VideoWriter(dir, fourcc, 50.0, (480, 640))
 
+    # 计算mpjpe/time
+    total_mpjpe = 0
 
+    # while (not NOROSPY and not rospy.is_shutdown()) or (NOROSPY and i<=226):
     while (not NOROSPY and not rospy.is_shutdown()) or (NOROSPY):
         # for i in range(1000*int(env.max_episode_length)):
 
         # obs[:, -19:] = 0 # will destroy the performance
+
+
+        # 计算MPJPE
+        # 计算root relative的MPJPE（先合并关节再减去root）
+        body_pos = env._rigid_body_pos
+        body_rot = env._rigid_body_rot
+
+        # 获取参考姿势
+        offset = env.env_origins + env.env_origins_init_3Doffset
+        motion_times = (env.episode_length_buf) * env.dt + env.motion_start_times
+        motion_res = env._get_state_from_motionlib_cache_trimesh(env.motion_ids, motion_times, offset=offset)
+        ref_body_pos_extend = motion_res['rg_pos_t']  # 参考姿势（已包含扩展关节）
+
+        # 计算当前姿势的扩展关节位置
+        extend_curr_pos = torch_utils.my_quat_rotate(
+        body_rot[:, env.extend_body_parent_ids].reshape(-1, 4), 
+        env.extend_body_pos.reshape(-1, 3)
+        ).view(env.num_envs, -1, 3) + body_pos[:, env.extend_body_parent_ids]
+
+        # 合并原始关节和扩展关节（当前姿势）
+        body_pos_extend = torch.cat([body_pos, extend_curr_pos], dim=1)
+
+        # 获取根关节位置（假设索引0是根关节）
+        root_pos = body_pos_extend[:, [0]]  # 当前姿势的根关节
+        # print(root_pos.shape)
+        ref_root_pos = ref_body_pos_extend[:, [0]]  # 参考姿势的根关节
+
+        # 转换为root relative坐标（所有关节统一处理）
+        body_pos_relative = body_pos_extend - root_pos
+        ref_body_pos_relative = ref_body_pos_extend - ref_root_pos
+
+        # 计算MPJPE
+        mpjpe = torch.norm(ref_body_pos_relative - body_pos_relative, p=2, dim=-1)  # L2距离
+        mean_mpjpe = mpjpe.mean()  # 平均关节位置误差
         
+        # 计算平均MPJPE
+        # if(i<=226):
+        #     total_mpjpe += mean_mpjpe.cpu().numpy()
+        #     if(i==226):
+        #         print(total_mpjpe/226)
+
         actions = policy(obs.detach())
         
         # print(torch.sum(torch.square(env.projected_gravity[:, :2]), dim=1))
         obs, _, rews, dones, infos = env.step(actions.detach())
-        # print(obs[0][-66:-66+19])
-        # print(obs[0][-113:-113+19])
-        # print(env.dof_pos[robot_index, :])
-        # quit(0)
-        
-        if env_cfg.motion.teleop_obs_version == 'v-teleop-dof-nolinvel-history':
-            target_joint_index = -66 + joint_index 
+
+        if env_cfg.motion.teleop_obs_version == 'v-teleop-dof-nolinvel-history-max':
+            target_joint_index = -63 + joint_index 
             target_joint = obs[0][target_joint_index].cpu().numpy()
             # print(target_joint)
         else:
@@ -246,6 +287,8 @@ def play(cfg_hydra: DictConfig) -> None:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             frame_path = os.path.join(experiment_dir, f"frame_{i}.png")
             cv2.imwrite(frame_path, img)
+            # tiff_path = os.path.join(experiment_dir, f"frame_{i}.tiff")
+            # cv2.imwrite(tiff_path, img, [cv2.IMWRITE_TIFF_COMPRESSION, 1])  
             video.write(img[..., :3])
 
         if env_cfg.motion.realtime_vr_keypoints:
@@ -283,8 +326,15 @@ def play(cfg_hydra: DictConfig) -> None:
                     'base_vel_x': env.base_lin_vel[robot_index, 0].item(),
                     'base_vel_y': env.base_lin_vel[robot_index, 1].item(),
                     'base_vel_z': env.base_lin_vel[robot_index, 2].item(),
-                    'base_vel_yaw': env.base_ang_vel[robot_index, 2].item(),
-                    'contact_forces_z': env.contact_forces[robot_index, env.feet_indices, 2].cpu().numpy()
+                    # 'base_vel_yaw': env.base_ang_vel[robot_index, 2].item(),
+                    # 'contact_forces_z': env.contact_forces[robot_index, env.feet_indices, 2].cpu().numpy()
+                    'MPJPE': mean_mpjpe.cpu().numpy(),
+                    "x_pos": root_pos[0][0][0].item(),
+                    "x_pos_ref": ref_root_pos[0][0][0].item(),
+                    "y_pos": root_pos[0][0][1].item(),
+                    "y_pos_ref": ref_root_pos[0][0][1].item(),
+                    "z_pos": root_pos[0][0][2].item(),
+                    "z_pos_ref": ref_root_pos[0][0][2].item()
                 }
             )
         elif i==stop_state_log:

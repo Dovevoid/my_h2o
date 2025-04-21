@@ -26,7 +26,7 @@ def split_and_combine_dict_data(stable_pkl_path, amass_pkl_path, output_pkl_path
     
     # 从amass数据中随机选取与另一半数量相同的动作
     amass_keys = list(amass_data.keys())
-    print(len(amass_keys))
+    print(amass_keys[:6])
     num_needed = num_stable_actions - half_stable
     
     if len(amass_keys) > num_needed:
@@ -42,8 +42,8 @@ def split_and_combine_dict_data(stable_pkl_path, amass_pkl_path, output_pkl_path
     combined_data = {**first_half, **second_half}
     
     # 保存结果到新的PKL文件
-    with open(output_pkl_path, 'wb') as f:
-        joblib.dump(combined_data, f)
+    # with open(output_pkl_path, 'wb') as f:
+    #     joblib.dump(combined_data, f)
     
     print(f"操作完成! 新文件包含 {len(combined_data)} 个动作数据:")
     print(f"- 来自 {stable_pkl_path}: {len(first_half)} 个")

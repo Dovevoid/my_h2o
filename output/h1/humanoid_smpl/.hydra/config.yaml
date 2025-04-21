@@ -34,7 +34,7 @@ train:
     entropy_coef: 0.005
     num_learning_epochs: 5
     num_mini_batches: 4
-    learning_rate: 0.001
+    learning_rate: 0.0005
     schedule: adaptive
     gamma: 0.99
     lam: 0.95
@@ -558,33 +558,22 @@ normalization:
   clip_observations: 100.0
 rewards:
   scales:
-    torque_limits: -2.0
-    dof_pos_limits: -100.0*1.25
-    dof_vel_limits: -50.0
-    termination: -200*1.25
+    torque_limits: -0.5
+    dof_pos_limits: -100.0
+    termination: -200.0
     dof_acc: -1.1e-05
     dof_vel: -0.004
     lower_action_rate: -3.0
     upper_action_rate: -0.625
     torques: -0.0001
     feet_air_time_teleop: 1000
-    feet_max_height_for_this_air: -2500
-    feet_contact_forces: -0.75
-    stumble: -1000.0*1.25
-    slippage: -30.0*1.25
-    feet_ori: -50.0*1.25
-    in_the_air: -200
-    orientation: -200.0
-    stable_lower_when_vrclose: 0
-    stable_lower_when_vrclose_positive: 0
-    feet_height: 0
+    feet_contact_forces: -0.25
+    stumble: -1000.0
+    slippage: -30.0
     closing: 0
-    teleop_selected_joint_position: 32
-    teleop_selected_joint_vel: 16
-    teleop_body_position: 0.0
-    teleop_body_position_extend: 30
-    teleop_body_position_extend_small_sigma: 0.0
-    teleop_body_position_extend_upper: 0
+    teleop_selected_joint_position: 40.0
+    teleop_selected_joint_vel: 5
+    teleop_body_position_extend: 20
     teleop_body_position_vr_3keypoints: 50
     teleop_body_rotation: 20.0
     teleop_body_vel: 8.0
@@ -677,10 +666,6 @@ rewards:
   - stumble
   - feet_air_time_teleop
   - slippage
-  - feet_ori
-  - orientation
-  - in_the_air
-  - stable_lower_when_vrclose
 sim:
   dt: 0.005
   substeps: 1

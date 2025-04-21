@@ -45,15 +45,18 @@ class AssetDesc:
         self.flip_visual_attachments = flip_visual_attachments
 
 
-h1_xml = "resources/robots/h1/h1.xml"
-h1_urdf = "resources/robots/h1/urdf/h1.urdf"
+h1_xml = "human2humanoid-main/legged_gym/resources/robots/h1/h1.xml"
+h1_urdf = "human2humanoid-main/legged_gym/resources/robots/h1/urdf/h1.urdf"
 asset_descriptors = [
     # AssetDesc(h1_xml, False),
     AssetDesc(h1_urdf, False),
 ]
 sk_tree = SkeletonTree.from_mjcf(h1_xml)
 
-motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/rgb_box_copyangle.pkl"
+# motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/walk_final.pkl"
+# motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/box_final.pkl"
+motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/box_copy_angle.pkl"
+# motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/rgb_box_copyangle.pkl"
 # motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/combined_actions_dict.pkl"
 # motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/stable_punch.pkl"
 # motion_file = "/home/peter/h2o/human2humanoid-main/legged_gym/resources/motions/h1/amass_phc_filtered.pkl"

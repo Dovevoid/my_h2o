@@ -146,7 +146,7 @@ hydra:
       viewer: viewer_base
       terrain: terrain_teleop
       sim: sim_teleop
-      rewards: rewards_teleop_omnih2o_teacher
+      rewards: rewards_teleop
       train: ppo_teleop
       normalization: normalization_teleop
       noise: noise_teleop

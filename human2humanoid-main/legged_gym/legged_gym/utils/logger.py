@@ -79,7 +79,7 @@ class Logger:
         joint_pos_fig, joint_pos_ax = plt.subplots(figsize=(8, 4))
 
         # plot joint targets and measured positions
-        a = axs[1, 0]
+        a = axs[0, 0]
         if log["dof_pos"]: 
             a.plot(time, log["dof_pos"], label='measured')
             joint_pos_ax.plot(time, log["dof_pos"], label='measured')  # 同步绘制到SVG画布
@@ -103,54 +103,175 @@ class Logger:
                             dpi=300)
         plt.close(joint_pos_fig)  # 关闭临时画布
 
-        # plot joint velocity
-        a = axs[1, 1]
-        if log["dof_vel"]: a.plot(time, log["dof_vel"], label='measured')
-        if log["dof_vel_target"]: a.plot(time, log["dof_vel_target"], label='target')
-        a.set(xlabel='time [s]', ylabel='Velocity [rad/s]', title='Joint Velocity')
-        a.legend()
 
-        # plot base vel x
-        a = axs[0, 0]
-        if log["base_vel_x"]: a.plot(time, log["base_vel_x"], label='measured')
-        if log["command_x"]: a.plot(time, log["command_x"], label='commanded')
-        a.set(xlabel='time [s]', ylabel='base lin vel [m/s]', title='Base velocity x')
-        a.legend()
-        # plot base vel y
+        # 画MPJPE
+        # 新建一个画布，保存结果
+        mpjpe_fig, mpjpe_ax = plt.subplots(figsize=(8, 4))
+
         a = axs[0, 1]
-        if log["base_vel_y"]: a.plot(time, log["base_vel_y"], label='measured')
-        if log["command_y"]: a.plot(time, log["command_y"], label='commanded')
-        a.set(xlabel='time [s]', ylabel='base lin vel [m/s]', title='Base velocity y')
-        a.legend()
-        # plot base vel yaw
+        if log["MPJPE"]!=[]: 
+            a.plot(time, log["MPJPE"], label='measured')
+            mpjpe_ax.plot(time, log["MPJPE"], label='measured')
+        a.set(xlabel='time [s]', ylabel='MPJPE [m]', title='MPJPE')
+        a.legend() 
+
+        # SVG画布设置
+        mpjpe_ax.set(
+            xlabel='time(s)', 
+            ylabel='MPJPE [m]', 
+            title='MPJPE',
+        )
+        mpjpe_ax.legend()
+        # 保存SVG
+        mpjpe_fig.savefig('mpjpe.svg', 
+                            format='svg', 
+                            bbox_inches='tight',  # 防止标签被裁剪
+                            dpi=300)
+        plt.close(mpjpe_fig)  # 关闭临时画布
+
+
+        # 画x位置
+        # 新建一个画布，保存结果
+        x_fig, x_ax = plt.subplots(figsize=(8, 4))
+
         a = axs[0, 2]
-        if log["base_vel_yaw"]: a.plot(time, log["base_vel_yaw"], label='measured')
-        if log["command_yaw"]: a.plot(time, log["command_yaw"], label='commanded')
-        a.set(xlabel='time [s]', ylabel='base ang vel [rad/s]', title='Base velocity yaw')
-        a.legend()
-        # plot base vel z
-        a = axs[1, 2]
-        if log["base_vel_z"]: a.plot(time, log["base_vel_z"], label='measured')
-        a.set(xlabel='time [s]', ylabel='base lin vel [m/s]', title='Base velocity z')
-        a.legend()
-        # plot contact forces
-        a = axs[2, 0]
-        if log["contact_forces_z"]:
-            forces = np.array(log["contact_forces_z"])
-            for i in range(forces.shape[1]):
-                a.plot(time, forces[:, i], label=f'force {i}')
-        a.set(xlabel='time [s]', ylabel='Forces z [N]', title='Vertical Contact forces')
-        a.legend()
-        # plot torque/vel curves
-        a = axs[2, 1]
-        if log["dof_vel"]!=[] and log["dof_torque"]!=[]: a.plot(log["dof_vel"], log["dof_torque"], 'x', label='measured')
-        a.set(xlabel='Joint vel [rad/s]', ylabel='Joint Torque [Nm]', title='Torque/velocity curves')
-        a.legend()
+        if log["x_pos"]!=[]: 
+            a.plot(time, log["x_pos"], label='x_position')
+            x_ax.plot(time, log["x_pos"], label='x_position')
+        if log["x_pos_ref"]!=[]: 
+            a.plot(time, log["x_pos_ref"], label='x_position_ref')
+            x_ax.plot(time, log["x_pos_ref"], label='x_position_ref')
+        a.set(xlabel='time [s]', ylabel='x_position[m]', title='x_position')
+        a.legend() 
+
+        # SVG画布设置
+        x_ax.set(
+            xlabel='time(s)', 
+            ylabel='x_position[m]',  
+            title='x_position',
+        )
+        x_ax.legend()
+        # 保存SVG
+        x_fig.savefig('x.svg', 
+                            format='svg', 
+                            bbox_inches='tight',  # 防止标签被裁剪
+                            dpi=300)
+        plt.close(x_fig)  # 关闭临时画布
+
+
+        # 画y位置
+        # 新建一个画布，保存结果
+        y_fig, y_ax = plt.subplots(figsize=(8, 4))
+
+        a = axs[1, 0]
+        if log["y_pos"]!=[]: 
+            a.plot(time, log["y_pos"], label='y_position')
+            y_ax.plot(time, log["y_pos"], label='y_position')
+        if log["y_pos_ref"]!=[]: 
+            a.plot(time, log["y_pos_ref"], label='y_position_ref')
+            y_ax.plot(time, log["y_pos_ref"], label='y_position_ref')
+        a.set(xlabel='time [s]', ylabel='y_position[m]', title='y_position')
+        a.legend() 
+
+        # SVG画布设置
+        y_ax.set(
+            xlabel='time(s)', 
+            ylabel='y_position[m]',  
+            title='y_position',
+        )
+        y_ax.legend()
+        # 保存SVG
+        y_fig.savefig('y.svg', 
+                            format='svg', 
+                            bbox_inches='tight',  # 防止标签被裁剪
+                            dpi=300)
+        plt.close(y_fig)  # 关闭临时画布
+
+
+
+        # 画z位置
+        # 新建一个画布，保存结果
+        z_fig, z_ax = plt.subplots(figsize=(8, 4))
+
+        a = axs[1, 1]
+        if log["z_pos"]!=[]: 
+            a.plot(time, log["z_pos"], label='z_position')
+            z_ax.plot(time, log["z_pos"], label='z_position')
+        if log["z_pos_ref"]!=[]: 
+            a.plot(time, log["z_pos_ref"], label='z_position_ref')
+            z_ax.plot(time, log["z_pos_ref"], label='z_position_ref')
+        a.set(xlabel='time [s]', ylabel='z_position[m]', title='z_position')
+        a.legend() 
+
+        # SVG画布设置
+        z_ax.set(
+            xlabel='time(s)', 
+            ylabel='z_position[m]',  
+            title='z_position',
+        )
+        z_ax.legend()
+        # 保存SVG
+        z_fig.savefig('z.svg', 
+                            format='svg', 
+                            bbox_inches='tight',  # 防止标签被裁剪
+                            dpi=300)
+        plt.close(z_fig)  # 关闭临时画布
+
+        # # plot joint velocity
+        # a = axs[1, 1]
+        # if log["dof_vel"]: a.plot(time, log["dof_vel"], label='measured')
+        # if log["dof_vel_target"]: a.plot(time, log["dof_vel_target"], label='target')
+        # a.set(xlabel='time [s]', ylabel='Velocity [rad/s]', title='Joint Velocity')
+        # a.legend()
+
+        # # plot base vel x
+        # a = axs[0, 0]
+        # if log["base_vel_x"]: a.plot(time, log["base_vel_x"], label='measured')
+        # if log["command_x"]: a.plot(time, log["command_x"], label='commanded')
+        # a.set(xlabel='time [s]', ylabel='base lin vel [m/s]', title='Base velocity x')
+        # a.legend()
+
+        # # plot base vel y
+        # a = axs[0, 1]
+        # if log["base_vel_y"]: a.plot(time, log["base_vel_y"], label='measured')
+        # if log["command_y"]: a.plot(time, log["command_y"], label='commanded')
+        # a.set(xlabel='time [s]', ylabel='base lin vel [m/s]', title='Base velocity y')
+        # a.legend()
+
+        # # plot base vel yaw
+        # a = axs[0, 2]
+        # if log["base_vel_yaw"]: a.plot(time, log["base_vel_yaw"], label='measured')
+        # if log["command_yaw"]: a.plot(time, log["command_yaw"], label='commanded')
+        # a.set(xlabel='time [s]', ylabel='base ang vel [rad/s]', title='Base velocity yaw')
+        # a.legend()
+
+        # # plot base vel z
+        # a = axs[1, 2]
+        # if log["base_vel_z"]: a.plot(time, log["base_vel_z"], label='measured')
+        # a.set(xlabel='time [s]', ylabel='base lin vel [m/s]', title='Base velocity z')
+        # a.legend()
+
+        # # plot contact forces
+        # a = axs[2, 0]
+        # if log["contact_forces_z"]:
+        #     forces = np.array(log["contact_forces_z"])
+        #     for i in range(forces.shape[1]):
+        #         a.plot(time, forces[:, i], label=f'force {i}')
+        # a.set(xlabel='time [s]', ylabel='Forces z [N]', title='Vertical Contact forces')
+        # a.legend()
+
+        # # plot torque/vel curves
+        # a = axs[2, 1]
+        # if log["dof_vel"]!=[] and log["dof_torque"]!=[]: a.plot(log["dof_vel"], log["dof_torque"], 'x', label='measured')
+        # a.set(xlabel='Joint vel [rad/s]', ylabel='Joint Torque [Nm]', title='Torque/velocity curves')
+        # a.legend()
+
         # plot torques
-        a = axs[2, 2]
-        if log["dof_torque"]!=[]: a.plot(time, log["dof_torque"], label='measured')
-        a.set(xlabel='time [s]', ylabel='Joint Torque [Nm]', title='Torque')
-        a.legend()
+        # a = axs[2, 2]
+        # if log["dof_torque"]!=[]: a.plot(time, log["dof_torque"], label='measured')
+        # a.set(xlabel='time [s]', ylabel='Joint Torque [Nm]', title='Torque')
+        # a.legend()
+
         plt.show()
 
     def print_rewards(self):
