@@ -1892,13 +1892,20 @@ class LeggedRobot(BaseTask):
         
         if self.cfg.env.num_privileged_obs is not None:
             # privileged obs
+
+            # self.privileged_info = torch.cat([
+            #     self._base_com_bias,
+            #     self._ground_friction_values[:, self.feet_indices],
+            #     self._link_mass_scale,
+            #     self._kp_scale,
+            #     self._kd_scale,
+            #     self._rfi_lim_scale,
+            #     self.contact_forces[:, self.feet_indices, :].reshape(self.num_envs, 6),
+            #     torch.clamp_max(self._recovery_counter.unsqueeze(1), 1),
+            # ], dim=1)
+
             self.privileged_info = torch.cat([
-                self._base_com_bias,
                 self._ground_friction_values[:, self.feet_indices],
-                self._link_mass_scale,
-                self._kp_scale,
-                self._kd_scale,
-                self._rfi_lim_scale,
                 self.contact_forces[:, self.feet_indices, :].reshape(self.num_envs, 6),
                 torch.clamp_max(self._recovery_counter.unsqueeze(1), 1),
             ], dim=1)
@@ -1913,7 +1920,6 @@ class LeggedRobot(BaseTask):
             privileged_obs_buf = None
 
         
-
         return obs, privileged_obs_buf
             
     def create_sim(self):
@@ -2172,10 +2178,15 @@ class LeggedRobot(BaseTask):
 
         # randomize base mass
         if self.cfg.domain_rand.randomize_base_mass:
-            raise Exception("index 0 is for world, 13 is for torso!")
+            # raise Exception("index 0 is for world, 13 is for torso!")
+            torso_index = self._body_list.index("torso_link")
+            assert torso_index != -1
+            # print(torso_index)
+            # quit()
             rng = self.cfg.domain_rand.added_mass_range
-            props[0].mass += np.random.uniform(rng[0], rng[1])
-        sum_mass = 0
+            props[torso_index].mass += np.random.uniform(rng[0], rng[1])
+        
+        # sum_mass = 0
         # print(env_id)
         # for i in range(len(props)):
         #     print(f"Mass of body {i}: {props[i].mass} (after randomization)")
