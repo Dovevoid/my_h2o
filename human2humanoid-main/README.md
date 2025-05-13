@@ -253,6 +253,8 @@ Please read through the whole README.md before cloning the repo.
 # 改域随机化
    python legged_gym/scripts/train_hydra.py --config-name=config_teleop task=h1:teleop run_name=H2O_Policy env.num_observations=880 env.num_privileged_obs=889 motion.teleop_obs_version=v-teleop-dof-nolinvel-history-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=4096 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=1.5 sim_device=cuda:0 motion.motion_file=resources/motions/h1/amass_phc_filtered.pkl rewards.penalty_curriculum=True rewards.penalty_scale=0.5 env.add_short_history=False 
 
+   python legged_gym/scripts/play_hydra.py --config-name=config_teleop task=h1:teleop env.num_observations=880 env.num_privileged_obs=889 motion.teleop_obs_version=v-teleop-dof-nolinvel-history-max motion.teleop_selected_keypoints_names=[left_ankle_link,right_ankle_link,left_shoulder_pitch_link,right_shoulder_pitch_link,left_elbow_link,right_elbow_link] motion.extend_head=False num_envs=1 asset.zero_out_far=False asset.termination_scales.max_ref_motion_distance=10.0 sim_device=cuda:0 load_run=25_05_12_18-56-33_H2O_Policy checkpoint=57500 env.add_short_history=False headless=False motion.motion_file=resources/motions/h1/box_final.pkl
+
 
 
 
